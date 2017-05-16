@@ -45,9 +45,7 @@ public class App {
 	@SuppressWarnings("rawtypes")
 	private MongoCollection outputCollection;
 	private String databaseName = "crowdfunding";
-	private String collectionName = "kickstarter";
-	//private String username = "Fitec";
-	//private String password = "Fitecmongo";
+	private String collectionName = "project";
 
 	private String urlBase = "https://www.kickstarter.com/discover/advanced?sort=newest&page=";
 
@@ -88,8 +86,15 @@ public class App {
 			e.printStackTrace();
 			exceptions.add(e);
 		}
+		logger.info("coucou");
+        System.out.println("coucou");
+		syste
 		if (exceptions.isEmpty()) {
-			outputCollection.insertMany(mongoDocuments);
+		    if(!mongoDocuments.isEmpty()){
+                outputCollection.insertMany(mongoDocuments);
+            }else {
+		        logger.info("pas de nouveau projets");
+            }
 		} else {
 			logger.info("erreur-s lors de l'upadte, documents non pushés dans mongo");
 		}
@@ -150,6 +155,7 @@ public class App {
 			if (scriptTags != null && !scriptTags.isEmpty()) {
 				// récupération du JSON contenant les infos de chaque projet
 				// Collection<JSONObject> collection = new ArrayList<>();
+
 				for (int i = 0; i < scriptTags.size(); i++) {
 					Element element = scriptTags.get(i);
 					String urlProjet = "https://www.kickstarter.com"
