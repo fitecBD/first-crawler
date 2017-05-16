@@ -46,8 +46,8 @@ public class App {
 	private MongoCollection outputCollection;
 	private String databaseName = "crowdfunding";
 	private String collectionName = "kickstarter";
-	private String username = "Fitec";
-	private String password = "Fitecmongo";
+	//private String username = "Fitec";
+	//private String password = "Fitecmongo";
 
 	private String urlBase = "https://www.kickstarter.com/discover/advanced?sort=newest&page=";
 
@@ -118,7 +118,7 @@ public class App {
 
 	private void getIdsProjects() {
 		// Construction de la requête
-		BasicDBObject allQuery = new BasicDBObject();
+		// BasicDBObject allQuery = new BasicDBObject();
 		BasicDBObject fields = new BasicDBObject();
 		fields.put("id", 1);
 		fields.put("_id", 0);
@@ -135,7 +135,7 @@ public class App {
 	}
 
 	private void doUpdate() throws IOException {
-		Elements scriptTags = null;
+		Elements scriptTags;
 		int nbPage = 1;
 		boolean running = true;
 		do {
@@ -149,7 +149,7 @@ public class App {
 
 			if (scriptTags != null && !scriptTags.isEmpty()) {
 				// récupération du JSON contenant les infos de chaque projet
-				Collection<JSONObject> collection = new ArrayList<>();
+				// Collection<JSONObject> collection = new ArrayList<>();
 				for (int i = 0; i < scriptTags.size(); i++) {
 					Element element = scriptTags.get(i);
 					String urlProjet = "https://www.kickstarter.com"
