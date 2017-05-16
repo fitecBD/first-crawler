@@ -60,7 +60,7 @@ public class App {
 
 	private int cptProjects = 0;
 
-	PropertiesConfiguration config;
+	private PropertiesConfiguration config;
 
 	public App() throws ConfigurationException {
 		super();
@@ -113,7 +113,7 @@ public class App {
 	private void initMongo() {
 		mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
 		mongoDatabase = mongoClient.getDatabase(databaseName);
-		outputCollection = mongoDatabase.getCollection(collectionName);
+		outputCollection = mongoDatabase.getCollection("test");
 	}
 
 	private void getIdsProjects() {
@@ -171,7 +171,7 @@ public class App {
 				running = false;
 			}
 			nbPage++;
-		} while (running);
+		} while (running && cptProjects <= 20);
 	}
 
 	private JSONObject buildJSONObject(String url) throws IOException {
