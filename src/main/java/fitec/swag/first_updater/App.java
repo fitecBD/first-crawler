@@ -87,6 +87,7 @@ public class App {
 		logger.info("coucou");
 		System.out.println("coucou");
 		if (exceptions.isEmpty()) {
+			logger.info("update terminée sans erreur");
 			if (!mongoDocuments.isEmpty()) {
 				mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
 				mongoClient.getDatabase(databaseName).getCollection("test").insertMany(mongoDocuments);
@@ -116,7 +117,7 @@ public class App {
 	private void initMongo() {
 		mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
 		mongoDatabase = mongoClient.getDatabase(databaseName);
-		outputCollection = mongoDatabase.getCollection("test");
+		outputCollection = mongoDatabase.getCollection(collectionName);
 	}
 
 	private void getIdsProjects() {
