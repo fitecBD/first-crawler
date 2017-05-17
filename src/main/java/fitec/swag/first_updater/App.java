@@ -76,7 +76,6 @@ public class App {
 
 	private void run() {
 		initFromProperties();
-		// initMongo();
 		getIdsProjects();
 		try {
 			doUpdate();
@@ -138,6 +137,8 @@ public class App {
 			}
 		}
 		mongoClient.close();
+
+		logger.info(idsProjetsCrawles.size() + " projets en base");
 	}
 
 	private void doUpdate() throws IOException {
