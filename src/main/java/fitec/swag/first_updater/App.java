@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
@@ -77,7 +76,7 @@ public class App {
 
 	private void run() {
 		initFromProperties();
-		initMongo();
+		// initMongo();
 		getIdsProjects();
 		try {
 			doUpdate();
@@ -87,14 +86,14 @@ public class App {
 			exceptions.add(e);
 		}
 		logger.info("coucou");
-        System.out.println("coucou");
-		syste
+		System.out.println("coucou");
 		if (exceptions.isEmpty()) {
-		    if(!mongoDocuments.isEmpty()){
-                outputCollection.insertMany(mongoDocuments);
-            }else {
-		        logger.info("pas de nouveau projets");
-            }
+			if (!mongoDocuments.isEmpty()) {
+				mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
+				mongoClient.getDatabase(databaseName).getCollection("test").insertMany(mongoDocuments);
+			} else {
+				logger.info("pas de nouveau projets");
+			}
 		} else {
 			logger.info("erreur-s lors de l'upadte, documents non pushés dans mongo");
 		}
@@ -130,6 +129,7 @@ public class App {
 
 		// on ajoute les ids à un hashset
 		System.out.println("getting projects ids from mongo database");
+		mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
 		try (MongoCursor<org.bson.Document> cursor = mongoClient.getDatabase(databaseName).getCollection(collectionName)
 				.find().projection(fields).iterator()) {
 			while (cursor.hasNext()) {
@@ -137,6 +137,7 @@ public class App {
 				idsProjetsCrawles.add(document.getInteger("id"));
 			}
 		}
+		mongoClient.close();
 	}
 
 	private void doUpdate() throws IOException {
