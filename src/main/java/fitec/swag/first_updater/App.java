@@ -72,7 +72,7 @@ public class App {
         if (exceptions.isEmpty()) {
             logger.info("update terminée sans erreur");
         } else {
-            logger.info("erreur-s lors de l'upadte, documents non pushés dans mongo");
+            logger.info("erreur(s) lors de l'update");
         }
     }
 
