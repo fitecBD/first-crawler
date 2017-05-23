@@ -28,14 +28,16 @@ import java.util.HashSet;
 import java.util.List;
 
 public class App {
-    private static final int maxNProjects = 4000;
+    private static final String urlBase = "https://www.kickstarter.com/discover/advanced?sort=newest&page=";
+    private static final int maxNProjects = 5000;
+
     private static Logger logger = LogManager.getLogger(App.class);
     private MongoClient mongoClient;
     private String mongoURI = "Fitec@mongodb://localhost:27017";
     private String databaseName = "crowdfunding";
     private String collectionName = "kickstarter";
 
-    private String urlBase = "https://www.kickstarter.com/discover/advanced?sort=newest&page=";
+
 
     private HashSet<Integer> idsProjetsCrawles = new HashSet<>();
     private List<Exception> exceptions = new ArrayList<>();
@@ -99,7 +101,7 @@ public class App {
 
         boolean running = true;
         while (running && cptProjects < maxNProjects) {
-            String url = this.urlBase + nbPage;
+            String url = urlBase + nbPage;
             System.out.println("scraping page : " + url);
             org.jsoup.nodes.Document doc;
             try {
@@ -139,10 +141,15 @@ public class App {
 
                     BasicDBObject fields = new BasicDBObject();
                     fields.put("\"urls.web.project\":1", 1);
+                    fields.put("state", 1);
                     fields.put("_id", 0);
 
                     org.bson.Document myDoc = mongoClient.getDatabase(databaseName).getCollection(collectionName)
                             .find(whereQuery).projection(fields).first();
+
+                    if (!myDoc.getString("state").equalsIgnoreCase("live")) {
+                        continue;
+                    }
 
                     String urlProjet = myDoc.getString("urls.web.project");
                     JSONObject jsonObject = buildJSONObject(urlProjet);
@@ -163,10 +170,9 @@ public class App {
     }
 
     private JSONObject buildJSONObject(String url) throws IOException {
-        org.jsoup.nodes.Document doc;
         JSONObject jsonObject = null;
         System.out.println("scraping project " + (++cptProjects) + " : " + url);
-        doc = Jsoup.connect(url).get();
+        org.jsoup.nodes.Document doc = Jsoup.connect(url).get();
         Elements scriptTags = doc.getElementsByTag("script");
         for (Element tag : scriptTags) {
             for (DataNode node : tag.dataNodes()) {
