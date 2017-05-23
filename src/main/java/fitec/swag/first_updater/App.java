@@ -110,7 +110,13 @@ public class App {
             String url = this.urlBase + nbPage;
             System.out.println("scraping page : " + url);
             org.jsoup.nodes.Document doc;
-            doc = Jsoup.connect(url).get();
+
+            try {
+                doc = Jsoup.connect(url).get();
+            } catch (Exception e) {
+                break;
+            }
+
             scriptTags = doc.getElementsByAttribute("data-project_pid");
 
             if (scriptTags != null && !scriptTags.isEmpty()) {
