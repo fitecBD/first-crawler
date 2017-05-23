@@ -28,8 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 
 public class App {
+    private static final int maxNProjects = 4000;
     private static Logger logger = LogManager.getLogger(App.class);
-
     private MongoClient mongoClient;
     private String mongoURI = "Fitec@mongodb://localhost:27017";
     private String databaseName = "crowdfunding";
@@ -61,6 +61,7 @@ public class App {
 
     private void run() {
         initFromProperties();
+        mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
         getIdsProjects();
         try {
             doUpdate();
@@ -69,6 +70,7 @@ public class App {
             e.printStackTrace();
             exceptions.add(e);
         }
+        mongoClient.close();
         if (exceptions.isEmpty()) {
             logger.info("update terminée sans erreur");
         } else {
@@ -76,20 +78,11 @@ public class App {
         }
     }
 
-    private void initFromProperties() {
-        // setup MongoDB connection
-        this.mongoURI = config.getString("mongo.uri");
-        this.databaseName = config.getString("mongo.database");
-        this.collectionName = config.getString("mongo.collection");
-    }
-
     private void getIdsProjects() {
         BasicDBObject fields = new BasicDBObject(); // construction de la requête
         fields.put("id", 1);
         fields.put("_id", 0);
-
         System.out.println("Getting project ids from MongoDB");
-        mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
         try (MongoCursor<org.bson.Document> cursor = mongoClient.getDatabase(databaseName).getCollection(collectionName)
                 .find().projection(fields).iterator()) {
             while (cursor.hasNext()) {
@@ -97,32 +90,27 @@ public class App {
                 idsProjetsCrawles.add(document.getInteger("id"));
             }
         }
-        mongoClient.close();
         logger.info(idsProjetsCrawles.size() + " projects in the database");
     }
 
     private void doUpdate() throws IOException {
         Elements scriptTags;
         int nbPage = 1; // start from page 1
-        mongoClient = new MongoClient(new MongoClientURI(this.mongoURI));
+
         boolean running = true;
-        while (running) {
+        while (running && cptProjects < maxNProjects) {
             String url = this.urlBase + nbPage;
             System.out.println("scraping page : " + url);
             org.jsoup.nodes.Document doc;
-
             try {
                 doc = Jsoup.connect(url).get();
             } catch (Exception e) {
                 break;
             }
-
             scriptTags = doc.getElementsByAttribute("data-project_pid");
-
             if (scriptTags != null && !scriptTags.isEmpty()) {
                 // récupération du JSON contenant les infos de chaque projet
-                for (int i = 0; i < scriptTags.size(); i++) {
-                    Element element = scriptTags.get(i);
+                for (Element element : scriptTags) {
                     String urlProjet = "https://www.kickstarter.com"
                             + element.getElementsByAttribute("href").attr("href");
                     int id = Integer.parseInt(element.attr("data-project_pid"));
@@ -141,13 +129,37 @@ public class App {
                         mongoClient.getDatabase(databaseName).getCollection(collectionName)
                                 .updateOne(filter, update, options);
                     }
+                    idsProjetsCrawles.remove(id);
+                }
+
+                // update les projets déjà dans la base mais plus dans la liste sur le site
+                for (int id : idsProjetsCrawles) {
+                    BasicDBObject whereQuery = new BasicDBObject();
+                    whereQuery.put("id", id);
+
+                    BasicDBObject fields = new BasicDBObject();
+                    fields.put("\"urls.web.project\":1", 1);
+                    fields.put("_id", 0);
+
+                    org.bson.Document myDoc = mongoClient.getDatabase(databaseName).getCollection(collectionName)
+                            .find(whereQuery).projection(fields).first();
+
+                    String urlProjet = myDoc.getString("urls.web.project");
+                    JSONObject jsonObject = buildJSONObject(urlProjet);
+                    org.bson.Document document = org.bson.Document.parse(jsonObject.toString());
+
+                    logger.info("updating project " + urlProjet + " - " + id);
+                    Bson filter = new org.bson.Document("id", document.getInteger("id"));
+                    Bson update = new org.bson.Document("$set", document);
+                    UpdateOptions options = new UpdateOptions().upsert(true);
+                    mongoClient.getDatabase(databaseName).getCollection(collectionName)
+                            .updateOne(filter, update, options);
                 }
             } else {
                 running = false;
             }
             nbPage++;
         }
-        mongoClient.close();
     }
 
     private JSONObject buildJSONObject(String url) throws IOException {
@@ -173,6 +185,13 @@ public class App {
             }
         }
         return jsonObject;
+    }
+
+    private void initFromProperties() {
+        // setup MongoDB connection
+        this.mongoURI = config.getString("mongo.uri");
+        this.databaseName = config.getString("mongo.database");
+        this.collectionName = config.getString("mongo.collection");
     }
 
 }
