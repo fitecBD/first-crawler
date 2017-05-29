@@ -217,7 +217,8 @@ public class App {
         project.setUpdates(updates);
 
         // add comments
-        JSONArray comments = getCommentsForProject();
+        String commentsUrl = project.getCommentsUrl();
+        JSONArray comments = getCommentsFromUrl(commentsUrl);
         project.setComments(comments);
 
         return project;
@@ -413,9 +414,32 @@ public class App {
     /**
      * Get comments for a project
      */
-    private JSONArray getCommentsForProject() {
+    private JSONArray getCommentsFromUrl(String start_url) throws IOException {
         logger.info("Scraping comments...");
-        // TODO : finish implementing this method
-        return new JSONArray();
+        String url = start_url;
+        JSONArray comments = new JSONArray();
+        boolean olderCommentToScrape = false;
+        do {
+            Document doc = getJsoupFromUrl(url);
+            Elements commentsElements = doc.select(".comment");
+            for (Element commentElement : commentsElements) {
+                String comment = commentElement.select("p").text()
+                        .replaceAll("\\s+", " ").trim();
+                if (comment.contains("This comment has been removed by Kickstarter.")) {
+                    continue;
+                }
+                comments.put(comment);
+            }
+            // récupération du lien "voir les commentaires plus anciens"
+            Elements olderCommentsElements = doc.select("a.older_comments");
+            if (olderCommentsElements.size() > 0) {
+                url = "https://www.kickstarter.com"
+                        + doc.select("a.older_comments").get(0).attr("href");
+                olderCommentToScrape = true;
+            } else {
+                olderCommentToScrape = false;
+            }
+        } while (olderCommentToScrape);
+        return comments;
     }
 }

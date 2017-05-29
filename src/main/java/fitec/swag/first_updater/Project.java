@@ -115,7 +115,7 @@ public class Project {
         JSONObject result = pBase;
 
         if (this.hasComments()) {
-            //result.put("comments", pComments);
+            result.put("comments", pComments);
         }
 
         if (this.hasUpdates()) {
